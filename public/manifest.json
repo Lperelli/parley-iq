@@ -1,0 +1,19 @@
+{
+  "name": "Parley IQ – Análisis de Fútbol",
+  "short_name": "Parley IQ",
+  "description": "Análisis estadístico de fútbol con IA. Probabilidades, tendencias y riesgo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#050b14",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "lang": "es"
+}

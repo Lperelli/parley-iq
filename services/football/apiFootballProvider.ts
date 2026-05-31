@@ -2,28 +2,42 @@ import { FootballProvider, getDataQuality } from './footballProvider';
 import { Fixture, League, Team, SearchResult, DataQuality, FormMatch, TeamStats, Standing, Squad, Player } from '@/types/football';
 
 const BASE_URL = process.env.FOOTBALL_API_BASE_URL ?? 'https://v3.football.api-sports.io';
-const API_KEY = process.env.FOOTBALL_API_KEY ?? '';
+// Support both variable names (guide uses API_FOOTBALL_KEY, app originally used FOOTBALL_API_KEY)
+const API_KEY = process.env.API_FOOTBALL_KEY ?? process.env.FOOTBALL_API_KEY ?? '';
 
-// ─── Ligas importantes + Mundial 2026 ────────────────────────────────────────
-// Formato: { id, name, season }
-const IMPORTANT_LEAGUES: { id: string; season: number }[] = [
-  { id: '39',  season: 2024 }, // Premier League
-  { id: '140', season: 2024 }, // La Liga
-  { id: '135', season: 2024 }, // Serie A
-  { id: '78',  season: 2024 }, // Bundesliga
-  { id: '61',  season: 2024 }, // Ligue 1
-  { id: '2',   season: 2024 }, // UEFA Champions League
-  { id: '3',   season: 2024 }, // UEFA Europa League
-  { id: '848', season: 2024 }, // UEFA Conference League
-  { id: '262', season: 2024 }, // Liga MX
-  { id: '253', season: 2024 }, // MLS
-  { id: '11',  season: 2026 }, // Mundial 2026
-  { id: '1',   season: 2025 }, // World Cup Qualifying (global)
-  { id: '32',  season: 2024 }, // CONMEBOL Libertadores
-  { id: '13',  season: 2024 }, // CONMEBOL Sudamericana
-];
+// ─── Ligas con prioridad de visualización (para ordenar, NO filtrar) ──────────
+// El plan Free de API Football solo permite /fixtures?date=X para el día actual.
+// NO filtramos por liga — mostramos todo y priorizamos las conocidas arriba.
+const LEAGUE_PRIORITY: Record<string, number> = {
+  '2': 100,   // UEFA Champions League
+  '3': 95,    // UEFA Europa League
+  '848': 90,  // UEFA Conference League
+  '39': 88,   // Premier League
+  '140': 87,  // La Liga
+  '135': 86,  // Serie A
+  '78': 85,   // Bundesliga
+  '61': 84,   // Ligue 1
+  '11': 99,   // Mundial 2026 (máxima prioridad cuando esté activo)
+  '1': 98,    // Eliminatorias Mundial
+  '262': 80,  // Liga MX
+  '253': 79,  // MLS
+  '32': 78,   // Copa Libertadores
+  '13': 77,   // Copa Sudamericana
+  '71': 76,   // Brazil Serie A
+  '72': 70,   // Brazil Serie B
+  '128': 75,  // Argentina Liga Profesional
+  '239': 74,  // Colombia Primera A
+  '265': 73,  // Chile Primera División
+  '98': 72,   // Japan J1 League
+  '88': 71,   // Saudi Pro League
+  '144': 69,  // Belgium Jupiler
+  '94': 68,   // Portugal Primeira Liga
+  '103': 67,  // Norway Eliteserien
+  '179': 66,  // Scotland Premiership
+};
 
-const IMPORTANT_LEAGUE_IDS = new Set(IMPORTANT_LEAGUES.map(l => l.id));
+// Seasons to try for standings (free plan: 2022-2024)
+const STANDINGS_SEASONS = [2024, 2023];
 
 const CURRENT_SEASON = 2024;
 
@@ -102,7 +116,7 @@ function mapFixtureBase(raw: any): Fixture {
     homeGoals: raw.goals?.home ?? undefined,
     awayGoals: raw.goals?.away ?? undefined,
     elapsed: raw.fixture.status?.elapsed ?? undefined,
-    isPopular: IMPORTANT_LEAGUE_IDS.has(String(raw.league.id)),
+    isPopular: (LEAGUE_PRIORITY[String(raw.league.id)] ?? 0) >= 70,
     hasAiAnalysis: false,
   };
 }
@@ -230,8 +244,12 @@ export class ApiFootballProvider implements FootballProvider {
     const raw = await safeApiFetch<any[]>(`/fixtures?date=${today}&timezone=America/Mexico_City`);
     return raw
       .map(mapFixtureBase)
-      .filter(f => IMPORTANT_LEAGUE_IDS.has(f.leagueId))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => {
+        const pa = LEAGUE_PRIORITY[a.leagueId] ?? 0;
+        const pb = LEAGUE_PRIORITY[b.leagueId] ?? 0;
+        if (pb !== pa) return pb - pa;
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
   }
 
   async getUpcomingFixtures(date: string): Promise<Fixture[]> {
@@ -239,8 +257,12 @@ export class ApiFootballProvider implements FootballProvider {
     const raw = await safeApiFetch<any[]>(`/fixtures?date=${date}&timezone=America/Mexico_City`);
     return raw
       .map(mapFixtureBase)
-      .filter(f => IMPORTANT_LEAGUE_IDS.has(f.leagueId))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => {
+        const pa = LEAGUE_PRIORITY[a.leagueId] ?? 0;
+        const pb = LEAGUE_PRIORITY[b.leagueId] ?? 0;
+        if (pb !== pa) return pb - pa;
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
   }
 
   async getLiveFixtures(): Promise<Fixture[]> {
@@ -248,21 +270,18 @@ export class ApiFootballProvider implements FootballProvider {
     const raw = await safeApiFetch<any[]>('/fixtures?live=all');
     return raw
       .map(mapFixtureBase)
-      .filter(f => IMPORTANT_LEAGUE_IDS.has(f.leagueId));
+      .sort((a, b) => (LEAGUE_PRIORITY[b.leagueId] ?? 0) - (LEAGUE_PRIORITY[a.leagueId] ?? 0));
   }
 
   async getPopularFixtures(): Promise<Fixture[]> {
-    // Return today's important-league matches sorted by league priority
+    // Single request for today's fixtures, sorted by priority — no per-league queries
     const today = new Date().toISOString().split('T')[0];
-    const topLeagues = ['2', '39', '140', '135', '78', '61', '262', '253', '11', '32'];
-    const requests = topLeagues.map(id =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      safeApiFetch<any[]>(`/fixtures?league=${id}&date=${today}`).then(r =>
-        r.map(f => ({ ...mapFixtureBase(f), isPopular: true }))
-      )
-    );
-    const results = await Promise.all(requests);
-    return results.flat();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = await safeApiFetch<any[]>(`/fixtures?date=${today}&timezone=America/Mexico_City`);
+    return raw
+      .map(f => ({ ...mapFixtureBase(f), isPopular: true }))
+      .sort((a, b) => (LEAGUE_PRIORITY[b.leagueId] ?? 0) - (LEAGUE_PRIORITY[a.leagueId] ?? 0))
+      .slice(0, 20);
   }
 
   async searchFixtures(query: string): Promise<SearchResult> {
@@ -378,10 +397,11 @@ export class ApiFootballProvider implements FootballProvider {
   }
 
   async getLeagues(): Promise<League[]> {
-    // Return our curated important leagues
-    const requests = IMPORTANT_LEAGUES.slice(0, 8).map(({ id, season }) =>
+    // Fetch our curated top leagues by ID (free plan compatible)
+    const topLeagueIds = ['2', '3', '39', '140', '135', '78', '61', '11', '262', '32'];
+    const requests = topLeagueIds.map(id =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      safeApiFetch<any[]>(`/leagues?id=${id}&season=${season}`).then(r =>
+      safeApiFetch<any[]>(`/leagues?id=${id}&season=${CURRENT_SEASON}`).then(r =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         r.map((l: any): League => ({
           id: String(l.league.id),
@@ -389,7 +409,7 @@ export class ApiFootballProvider implements FootballProvider {
           country: l.country.name,
           logo: l.league.logo,
           flag: l.country.flag ?? '',
-          season: l.seasons?.find((s: { year: number; current: boolean }) => s.current)?.year ?? season,
+          season: l.seasons?.find((s: { year: number; current: boolean }) => s.current)?.year ?? CURRENT_SEASON,
         }))
       )
     );

@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, Calendar, Layers, Bookmark, Settings, Zap, Shield, TrendingUp, Target } from 'lucide-react';
+import { Home, Calendar, Layers, Bookmark, Settings, Zap, Shield, TrendingUp, Target, Trophy } from 'lucide-react';
 import { useParleyStore } from '@/store/parleyStore';
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: Home, color: '' },
   { href: '/partidos', label: 'Partidos', icon: Calendar, color: '' },
+  { href: '/tablas', label: 'Tablas', icon: Trophy, color: '' },
   { href: '/picks', label: 'Picks del Día', icon: Target, color: 'text-amber-400', badge: '🔥' },
   { href: '/parley', label: 'Constructor Parley', icon: Layers, color: '' },
   { href: '/guardados', label: 'Guardados', icon: Bookmark, color: '' },

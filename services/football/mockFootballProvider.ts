@@ -1,5 +1,5 @@
 import { FootballProvider, getDataQuality } from './footballProvider';
-import { Fixture, League, SearchResult, DataQuality } from '@/types/football';
+import { Fixture, League, SearchResult, DataQuality, Standing } from '@/types/football';
 import { MOCK_FIXTURES, MOCK_LEAGUES } from './mockData';
 
 function getTodayStr(): string {
@@ -61,6 +61,10 @@ export class MockFootballProvider implements FootballProvider {
   async getLeagues(): Promise<League[]> {
     await this.delay(200);
     return MOCK_LEAGUES;
+  }
+
+  async getStandings(_leagueId: string, _season: number): Promise<Standing[]> {
+    return [];
   }
 
   getDataQuality(fixture: Fixture): DataQuality {

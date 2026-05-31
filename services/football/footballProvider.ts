@@ -1,4 +1,4 @@
-import { Fixture, League, Team, SearchResult, DataQuality } from '@/types/football';
+import { Fixture, League, Team, SearchResult, DataQuality, Standing } from '@/types/football';
 
 export interface FootballProvider {
   getTodayFixtures(): Promise<Fixture[]>;
@@ -8,6 +8,7 @@ export interface FootballProvider {
   searchFixtures(query: string): Promise<SearchResult>;
   getFixtureById(fixtureId: string): Promise<Fixture | null>;
   getLeagues(): Promise<League[]>;
+  getStandings(leagueId: string, season: number): Promise<Standing[]>;
   getDataQuality(fixture: Fixture): DataQuality;
 }
 

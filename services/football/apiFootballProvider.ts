@@ -1,5 +1,5 @@
 import { FootballProvider, getDataQuality } from './footballProvider';
-import { Fixture, League, Team, SearchResult, DataQuality, FormMatch, TeamStats } from '@/types/football';
+import { Fixture, League, Team, SearchResult, DataQuality, FormMatch, TeamStats, Standing } from '@/types/football';
 
 const BASE_URL = process.env.FOOTBALL_API_BASE_URL ?? 'https://v3.football.api-sports.io';
 const API_KEY = process.env.FOOTBALL_API_KEY ?? '';
@@ -353,6 +353,28 @@ export class ApiFootballProvider implements FootballProvider {
     }
 
     return fixture;
+  }
+
+  async getStandings(leagueId: string, season: number): Promise<Standing[]> {
+    const raw = await safeApiFetch<any[]>(`/standings?league=${leagueId}&season=${season}`);
+    if (!raw?.length) return [];
+    const standings = (raw[0] as any)?.league?.standings?.[0] ?? [];
+    return standings.map((s: any): Standing => ({
+      rank: s.rank,
+      teamId: String(s.team.id),
+      teamName: s.team.name,
+      teamLogo: s.team.logo,
+      played: s.all.played,
+      wins: s.all.win,
+      draws: s.all.draw,
+      losses: s.all.lose,
+      goalsFor: s.all.goals.for,
+      goalsAgainst: s.all.goals.against,
+      goalsDiff: s.goalsDiff,
+      points: s.points,
+      form: s.form ?? '',
+      description: s.description ?? '',
+    }));
   }
 
   async getLeagues(): Promise<League[]> {

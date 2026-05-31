@@ -131,6 +131,23 @@ export interface SearchResult {
   leagues: League[];
 }
 
+export interface Standing {
+  rank: number;
+  teamId: string;
+  teamName: string;
+  teamLogo: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalsDiff: number;
+  points: number;
+  form?: string; // e.g. "WWDLW"
+  description?: string; // e.g. "Champions League"
+}
+
 export interface DataQuality {
   hasRecentForm: boolean;
   hasH2H: boolean;

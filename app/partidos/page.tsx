@@ -12,25 +12,53 @@ const TABS = [
   { id: 'manana', label: 'Mañana' },
   { id: 'populares', label: '⚡ Populares' },
   { id: 'vivo', label: '🔴 En Vivo' },
+  { id: 'proximos', label: '📅 Próximos' },
 ];
+
+function getDateOffset(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().split('T')[0];
+}
+
+function formatDateLabel(dateStr: string): string {
+  const today = getDateOffset(0);
+  const tomorrow = getDateOffset(1);
+  if (dateStr === today) return 'Hoy';
+  if (dateStr === tomorrow) return 'Mañana';
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 export default function PartidosPage() {
   const [activeTab, setActiveTab] = useState('hoy');
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(getDateOffset(1));
+
+  // Build 7-day strip: yesterday through +6
+  const dateStrip = Array.from({ length: 7 }, (_, i) => getDateOffset(i - 1 + 1)); // tomorrow..+7
+  // Actually: yesterday(−1), today(0), tomorrow(+1), +2..+5 — 7 days total starting yesterday
+  const dateStripDays = Array.from({ length: 7 }, (_, i) => getDateOffset(i - 1));
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams({ tab: activeTab });
-    if (activeTab === 'manana') {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      params.set('date', d.toISOString().split('T')[0]);
+
+    let url = '';
+    if (activeTab === 'proximos') {
+      url = `/api/fixtures?date=${selectedDate}`;
+    } else {
+      const params = new URLSearchParams({ tab: activeTab });
+      if (activeTab === 'manana') {
+        params.set('date', getDateOffset(1));
+      }
+      url = `/api/fixtures?${params}`;
     }
-    fetch(`/api/fixtures?${params}`)
+
+    fetch(url)
       .then(r => r.json())
       .then(data => {
         if (!cancelled) {
@@ -39,9 +67,14 @@ export default function PartidosPage() {
           setLoading(false);
         }
       })
-      .catch(() => { if (!cancelled) { setError('Error al cargar partidos'); setLoading(false); } });
+      .catch(() => {
+        if (!cancelled) {
+          setError('Error al cargar partidos');
+          setLoading(false);
+        }
+      });
     return () => { cancelled = true; };
-  }, [activeTab]);
+  }, [activeTab, selectedDate]);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
@@ -76,6 +109,36 @@ export default function PartidosPage() {
           </motion.button>
         ))}
       </motion.div>
+
+      {/* Date strip — only when "Próximos" tab is active */}
+      {activeTab === 'proximos' && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: 'easeOut' as const }}
+          className="tabs-scroll-fade -mx-4 px-4"
+        >
+          {dateStripDays.map(dateStr => {
+            const isSelected = selectedDate === dateStr;
+            return (
+              <button
+                key={dateStr}
+                onClick={() => setSelectedDate(dateStr)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex flex-col items-center gap-0.5 ${
+                  isSelected
+                    ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/25'
+                    : 'text-slate-500 hover:text-slate-300 glass-card border border-white/[0.06]'
+                }`}
+              >
+                <span>{formatDateLabel(dateStr)}</span>
+                <span className={`text-[10px] ${isSelected ? 'text-cyan-500/70' : 'text-slate-600'}`}>
+                  {dateStr.slice(5)}
+                </span>
+              </button>
+            );
+          })}
+        </motion.div>
+      )}
 
       {/* Results */}
       {loading ? (

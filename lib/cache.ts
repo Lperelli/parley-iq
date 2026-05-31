@@ -53,4 +53,5 @@ export const TTL = {
   AI_ANALYSIS: 2 * 60 * 60,  // 2 hours
   AI_PARLEY: 30 * 60,        // 30 minutes
   FINISHED_MATCH: 7 * 24 * 60 * 60, // 7 days
+  STANDINGS: 3600,                   // 1 hour
 } as const;

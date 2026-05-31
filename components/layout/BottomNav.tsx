@@ -31,7 +31,7 @@ export default function BottomNav() {
           const active   = href === '/' ? pathname === '/' : pathname.startsWith(href);
           const isParley = href === '/parley';
           const isPicks  = href === '/picks';
-          const accentColor = isPicks ? '#f59e0b' : '#a3fb5a';
+          const accentColor = isPicks ? '#f0a93b' : '#c6f24e';
 
           return (
             <Link
@@ -68,8 +68,8 @@ export default function BottomNav() {
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center leading-none"
-                    style={{ background: '#a3fb5a', color: '#06090e' }}
+                    className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-mono flex items-center justify-center leading-none"
+                    style={{ background: '#c6f24e', color: '#0a0c08' }}
                   >
                     {picks.length}
                   </motion.span>

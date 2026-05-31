@@ -64,16 +64,16 @@ export default function Header() {
         {/* Mobile logo */}
         <Link href="/" className="md:hidden flex items-center gap-2 shrink-0">
           <div className="relative w-7 h-7 shrink-0">
-            <div className="absolute inset-0 rounded-md" style={{ background: '#a3fb5a' }} />
+            <div className="absolute inset-0 rounded-md" style={{ background: '#c6f24e' }} />
             <div className="absolute inset-0 flex items-center justify-center">
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
                 <path d="M7 1L9.5 5.5H12L8.5 8.5L10 13L7 10.5L4 13L5.5 8.5L2 5.5H4.5L7 1Z"
-                  fill="#06090e" />
+                  fill="#0a0c08" />
               </svg>
             </div>
           </div>
           <span className="font-display font-bold text-[15px] tracking-tight text-white">
-            Parley<span style={{ color: '#a3fb5a' }}>IQ</span>
+            Parley<span style={{ color: '#c6f24e' }}>IQ</span>
           </span>
         </Link>
 
@@ -83,7 +83,7 @@ export default function Header() {
             className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200"
             style={{
               background: open ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${open ? 'rgba(163,251,90,0.25)' : 'rgba(255,255,255,0.07)'}`,
+              border: `1px solid ${open ? 'rgba(198,242,78,0.28)' : 'rgba(255,255,255,0.07)'}`,
             }}
           >
             <Search className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--text-2)' }} />
@@ -109,8 +109,8 @@ export default function Header() {
                   <X className="w-3.5 h-3.5" />
                 </motion.button>
               ) : (
-                <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
-                  style={{ color: 'var(--text-3)', border: '1px solid rgba(255,255,255,0.07)', fontFamily: 'Outfit, sans-serif' }}>
+                <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono tracking-wider"
+                  style={{ color: 'var(--text-3)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <Command className="w-2.5 h-2.5" />K
                 </kbd>
               )}
@@ -153,7 +153,7 @@ export default function Header() {
                     <span className="text-[13px] text-white flex-1 truncate">
                       {f.homeTeam.name} <span style={{ color: 'var(--text-2)' }}>vs</span> {f.awayTeam.name}
                     </span>
-                    <span className="text-[11px] font-data shrink-0" style={{ color: 'var(--text-2)' }}>
+                    <span className="text-[11px] font-mono shrink-0" style={{ color: 'var(--text-2)' }}>
                       {formatTime(f.date)}
                     </span>
                   </Link>
@@ -169,9 +169,9 @@ export default function Header() {
             href="/parley"
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200"
             style={picks.length > 0 ? {
-              background: 'rgba(163,251,90,0.1)',
-              border: '1px solid rgba(163,251,90,0.2)',
-              color: '#a3fb5a',
+              background: 'rgba(198,242,78,0.1)',
+              border: '1px solid rgba(198,242,78,0.22)',
+              color: '#c6f24e',
             } : {
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.07)',
@@ -186,8 +186,8 @@ export default function Header() {
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  className="min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
-                  style={{ background: '#a3fb5a', color: '#06090e' }}
+                  className="font-mono min-w-[18px] h-[18px] px-1 rounded-md text-[10px] font-medium flex items-center justify-center leading-none"
+                  style={{ background: '#c6f24e', color: '#0a0c08' }}
                 >
                   {picks.length}
                 </motion.span>

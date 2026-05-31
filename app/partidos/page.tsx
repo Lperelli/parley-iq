@@ -7,12 +7,14 @@ import MatchCard from '@/components/match/MatchCard';
 import { MatchCardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Calendar } from 'lucide-react';
 
+const ACCENT = '#c6f24e';
+
 const TABS = [
-  { id: 'hoy', label: 'Hoy' },
-  { id: 'manana', label: 'Mañana' },
-  { id: 'populares', label: '⚡ Populares' },
-  { id: 'vivo', label: '🔴 En Vivo' },
-  { id: 'proximos', label: '📅 Próximos' },
+  { id: 'hoy',      label: 'Hoy'      },
+  { id: 'manana',   label: 'Mañana'   },
+  { id: 'populares',label: 'Top'      },
+  { id: 'vivo',     label: 'Live'     },
+  { id: 'proximos', label: 'Próximos' },
 ];
 
 function getDateOffset(offset: number): string {
@@ -27,19 +29,16 @@ function formatDateLabel(dateStr: string): string {
   if (dateStr === today) return 'Hoy';
   if (dateStr === tomorrow) return 'Mañana';
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' });
 }
 
 export default function PartidosPage() {
-  const [activeTab, setActiveTab] = useState('hoy');
-  const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab]       = useState('hoy');
+  const [fixtures, setFixtures]         = useState<Fixture[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(getDateOffset(1));
 
-  // Build 7-day strip: yesterday through +6
-  const dateStrip = Array.from({ length: 7 }, (_, i) => getDateOffset(i - 1 + 1)); // tomorrow..+7
-  // Actually: yesterday(−1), today(0), tomorrow(+1), +2..+5 — 7 days total starting yesterday
   const dateStripDays = Array.from({ length: 7 }, (_, i) => getDateOffset(i - 1));
 
   useEffect(() => {
@@ -52,9 +51,7 @@ export default function PartidosPage() {
       url = `/api/fixtures?date=${selectedDate}`;
     } else {
       const params = new URLSearchParams({ tab: activeTab });
-      if (activeTab === 'manana') {
-        params.set('date', getDateOffset(1));
-      }
+      if (activeTab === 'manana') params.set('date', getDateOffset(1));
       url = `/api/fixtures?${params}`;
     }
 
@@ -67,71 +64,55 @@ export default function PartidosPage() {
           setLoading(false);
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setError('Error al cargar partidos');
-          setLoading(false);
-        }
-      });
+      .catch(() => { if (!cancelled) { setError('Error al cargar partidos'); setLoading(false); } });
     return () => { cancelled = true; };
   }, [activeTab, selectedDate]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
-      <motion.h1
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="font-display text-xl font-bold text-white"
-      >
-        Partidos
-      </motion.h1>
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
 
-      {/* Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.05 }}
-        className="tabs-scroll-fade -mx-4 px-4"
-      >
-        {TABS.map(tab => (
-          <motion.button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            whileTap={{ scale: 0.95 }}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              activeTab === tab.id
-                ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/25'
-                : 'text-slate-500 hover:text-slate-300 glass-card border border-white/[0.06]'
-            }`}
-          >
-            {tab.label}
-          </motion.button>
-        ))}
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-2">
+        <span className="eyebrow">Calendario</span>
+        <h1 className="font-display text-2xl font-bold text-white tracking-tight">Partidos</h1>
       </motion.div>
 
-      {/* Date strip — only when "Próximos" tab is active */}
+      {/* Tabs */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
+        className="tabs-scroll-fade -mx-4 px-4">
+        {TABS.map(tab => {
+          const active = activeTab === tab.id;
+          return (
+            <motion.button key={tab.id} onClick={() => setActiveTab(tab.id)} whileTap={{ scale: 0.95 }}
+              className="shrink-0 px-4 py-1.5 rounded-lg whitespace-nowrap transition-all"
+              style={{
+                fontFamily: 'DM Mono, monospace', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+                background: active ? ACCENT : 'rgba(255,255,255,0.04)',
+                color: active ? '#0a0c08' : 'var(--text-2)',
+                border: active ? '1px solid transparent' : '1px solid var(--line)',
+              }}>
+              {tab.label}
+            </motion.button>
+          );
+        })}
+      </motion.div>
+
+      {/* Date strip */}
       {activeTab === 'proximos' && (
-        <motion.div
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2, ease: 'easeOut' as const }}
-          className="tabs-scroll-fade -mx-4 px-4"
-        >
+        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: 'easeOut' as const }}
+          className="tabs-scroll-fade -mx-4 px-4">
           {dateStripDays.map(dateStr => {
             const isSelected = selectedDate === dateStr;
             return (
-              <button
-                key={dateStr}
-                onClick={() => setSelectedDate(dateStr)}
-                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex flex-col items-center gap-0.5 ${
-                  isSelected
-                    ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/25'
-                    : 'text-slate-500 hover:text-slate-300 glass-card border border-white/[0.06]'
-                }`}
-              >
-                <span>{formatDateLabel(dateStr)}</span>
-                <span className={`text-[10px] ${isSelected ? 'text-cyan-500/70' : 'text-slate-600'}`}>
+              <button key={dateStr} onClick={() => setSelectedDate(dateStr)}
+                className="shrink-0 px-3 py-1.5 rounded-lg transition-all flex flex-col items-center gap-1 min-w-[58px]"
+                style={{
+                  background: isSelected ? ACCENT : 'rgba(255,255,255,0.04)',
+                  color: isSelected ? '#0a0c08' : 'var(--text-2)',
+                  border: isSelected ? '1px solid transparent' : '1px solid var(--line)',
+                }}>
+                <span className="font-mono text-[11px] tracking-wide uppercase">{formatDateLabel(dateStr)}</span>
+                <span className="font-mono text-[9px]" style={{ color: isSelected ? 'rgba(10,12,8,0.6)' : 'var(--text-3)' }}>
                   {dateStr.slice(5)}
                 </span>
               </button>
@@ -142,20 +123,20 @@ export default function PartidosPage() {
 
       {/* Results */}
       {loading ? (
-        <div className="space-y-3">{[1,2,3,4].map(i => <MatchCardSkeleton key={i} />)}</div>
+        <div className="space-y-2.5">{[1,2,3,4].map(i => <MatchCardSkeleton key={i} />)}</div>
       ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-rose-400 text-sm">{error}</p>
+        <div className="flex flex-col items-center py-14 gap-2">
+          <span className="font-mono text-[10px] tracking-wider uppercase" style={{ color: 'var(--rose)' }}>Error</span>
+          <p className="text-[13px]" style={{ color: 'var(--text-2)' }}>{error}</p>
         </div>
       ) : fixtures.length > 0 ? (
-        <div className="space-y-3">{fixtures.map((f, i) => <MatchCard key={f.id} fixture={f} index={i} />)}</div>
+        <div className="space-y-2.5">{fixtures.map((f, i) => <MatchCard key={f.id} fixture={f} index={i} />)}</div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="text-center py-16"
-        >
-          <Calendar className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-          <p className="text-slate-500 text-sm">Sin partidos en esta categoría</p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-16 gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)' }}>
+            <Calendar className="w-5 h-5" style={{ color: 'var(--text-3)' }} />
+          </div>
+          <p className="text-[13px]" style={{ color: 'var(--text-2)' }}>Sin partidos en esta categoría</p>
         </motion.div>
       )}
     </div>

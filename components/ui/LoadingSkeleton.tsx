@@ -19,26 +19,23 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function MatchCardSkeleton() {
   return (
-    <div className="glass-card rounded-2xl p-4 space-y-3">
-      <div className="flex justify-between items-center">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-3 w-16" />
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* League row */}
+      <div className="flex justify-between items-center px-4 pt-3 pb-2">
+        <Skeleton className="h-2.5 w-28 rounded" />
+        <Skeleton className="h-2.5 w-14 rounded" />
       </div>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <Skeleton className="w-10 h-10 rounded-full" />
-          <Skeleton className="h-4 w-28" />
+      {/* Teams + score */}
+      <div className="flex items-center gap-3 px-4 pb-3">
+        <div className="flex items-center gap-2.5 flex-1">
+          <Skeleton className="w-[34px] h-[34px] rounded-xl" />
+          <Skeleton className="h-3.5 w-24 rounded" />
         </div>
-        <Skeleton className="w-16 h-8 rounded-lg" />
-        <div className="flex items-center gap-3 flex-1 justify-end">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="w-10 h-10 rounded-full" />
+        <Skeleton className="w-14 h-9 rounded-xl" />
+        <div className="flex items-center gap-2.5 flex-1 justify-end">
+          <Skeleton className="h-3.5 w-24 rounded" />
+          <Skeleton className="w-[34px] h-[34px] rounded-xl" />
         </div>
-      </div>
-      <div className="flex gap-2">
-        <Skeleton className="h-5 w-16 rounded-full" />
-        <Skeleton className="h-5 w-20 rounded-full" />
-        <Skeleton className="h-5 w-14 rounded-full" />
       </div>
     </div>
   );

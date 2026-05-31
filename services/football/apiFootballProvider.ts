@@ -1,5 +1,5 @@
 import { FootballProvider, getDataQuality } from './footballProvider';
-import { Fixture, League, Team, SearchResult, DataQuality, FormMatch, TeamStats, Standing } from '@/types/football';
+import { Fixture, League, Team, SearchResult, DataQuality, FormMatch, TeamStats, Standing, Squad, Player } from '@/types/football';
 
 const BASE_URL = process.env.FOOTBALL_API_BASE_URL ?? 'https://v3.football.api-sports.io';
 const API_KEY = process.env.FOOTBALL_API_KEY ?? '';
@@ -395,6 +395,29 @@ export class ApiFootballProvider implements FootballProvider {
     );
     const results = await Promise.all(requests);
     return results.flat();
+  }
+
+  async getSquad(teamId: string): Promise<Squad | null> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = await safeApiFetch<any[]>(`/players/squads?team=${teamId}`);
+    if (!raw?.length) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entry = raw[0] as any;
+    return {
+      teamId,
+      teamName: entry.team?.name ?? '',
+      teamLogo: entry.team?.logo ?? '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      players: (entry.players ?? []).map((p: any): Player => ({
+        id: p.id,
+        name: p.name,
+        number: p.number ?? undefined,
+        position: p.position ?? 'Unknown',
+        photo: p.photo ?? '',
+        age: p.age ?? undefined,
+        nationality: p.nationality ?? undefined,
+      })),
+    };
   }
 
   getDataQuality(fixture: Fixture): DataQuality {

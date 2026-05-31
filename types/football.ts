@@ -148,6 +148,23 @@ export interface Standing {
   description?: string; // e.g. "Champions League"
 }
 
+export interface Player {
+  id: number;
+  name: string;
+  number?: number;
+  position: string;
+  photo: string;
+  age?: number;
+  nationality?: string;
+}
+
+export interface Squad {
+  teamId: string;
+  teamName: string;
+  teamLogo: string;
+  players: Player[];
+}
+
 export interface DataQuality {
   hasRecentForm: boolean;
   hasH2H: boolean;

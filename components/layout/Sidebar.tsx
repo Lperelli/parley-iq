@@ -3,20 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, Calendar, Layers, Bookmark, Settings, Zap, Shield, TrendingUp } from 'lucide-react';
+import { Home, Calendar, Layers, Bookmark, Settings, Zap, Shield, TrendingUp, Target } from 'lucide-react';
 import { useParleyStore } from '@/store/parleyStore';
 
 const navItems = [
-  { href: '/', label: 'Inicio', icon: Home },
-  { href: '/partidos', label: 'Partidos', icon: Calendar },
-  { href: '/parley', label: 'Constructor Parley', icon: Layers },
-  { href: '/guardados', label: 'Guardados', icon: Bookmark },
-  { href: '/configuracion', label: 'Configuración', icon: Settings },
+  { href: '/', label: 'Inicio', icon: Home, color: '' },
+  { href: '/partidos', label: 'Partidos', icon: Calendar, color: '' },
+  { href: '/picks', label: 'Picks del Día', icon: Target, color: 'text-amber-400', badge: '🔥' },
+  { href: '/parley', label: 'Constructor Parley', icon: Layers, color: '' },
+  { href: '/guardados', label: 'Guardados', icon: Bookmark, color: '' },
+  { href: '/configuracion', label: 'Configuración', icon: Settings, color: '' },
 ];
 
 const quickStats = [
   { label: 'Ligas cubiertas', value: '6' },
-  { label: 'Mercados analizados', value: '12+' },
+  { label: 'Mercados', value: '12+' },
 ];
 
 export default function Sidebar() {
@@ -29,7 +30,7 @@ export default function Sidebar() {
       <div className="px-5 py-5 border-b border-white/[0.05]">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 group-hover:shadow-cyan-500/50 transition-shadow">
-            <Zap className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
+            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           <div>
             <span className="font-display text-base font-bold tracking-tight text-white block leading-none">
@@ -42,9 +43,10 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon, color, badge }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           const isParley = href === '/parley';
+          const isPicks = href === '/picks';
 
           return (
             <Link
@@ -52,12 +54,18 @@ export default function Sidebar() {
               href={href}
               className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-sm font-medium group ${
                 active
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/15'
-                  : 'text-slate-500 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                  ? isPicks
+                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/15'
+                  : `text-slate-500 hover:text-white hover:bg-white/[0.04] border border-transparent`
               }`}
             >
-              <Icon className="w-4 h-4 shrink-0" strokeWidth={active ? 2.5 : 2} />
+              <Icon
+                className={`w-4 h-4 shrink-0 ${active ? (isPicks ? 'text-amber-400' : 'text-cyan-400') : color || 'text-slate-500 group-hover:text-slate-300'}`}
+                strokeWidth={active ? 2.5 : 2}
+              />
               <span className="flex-1 truncate">{label}</span>
+              {badge && !active && <span className="text-xs">{badge}</span>}
               {isParley && picks.length > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -70,7 +78,7 @@ export default function Sidebar() {
               {active && (
                 <motion.div
                   layoutId="sidebarActiveIndicator"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-cyan-400"
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full ${isPicks ? 'bg-amber-400' : 'bg-cyan-400'}`}
                   transition={{ duration: 0.2 }}
                 />
               )}
@@ -79,7 +87,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Quick stats widget */}
+      {/* Quick stats */}
       <div className="mx-3 mb-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
         <div className="flex items-center gap-1.5 mb-2">
           <TrendingUp className="w-3 h-3 text-cyan-400" />
@@ -95,7 +103,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Footer disclaimer */}
+      {/* Footer */}
       <div className="px-4 py-3.5 border-t border-white/[0.05]">
         <div className="flex items-center gap-1.5 mb-0.5">
           <Shield className="w-3 h-3 text-slate-600 shrink-0" />

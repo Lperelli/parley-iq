@@ -2,6 +2,7 @@ import { MatchAnalysis, MatchAnalysisInput } from '@/types/analysis';
 import { ParleyPick, ParleyAIAnalysis } from '@/types/parley';
 import { Fixture } from '@/types/football';
 import { DataQuality } from '@/types/football';
+import { DailyPick, DailyPicksResult } from '@/types/picks';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY ?? '';
 const GROQ_MODEL = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
@@ -184,5 +185,119 @@ ${JSON.stringify(picks.map(p => ({
     correlationWarnings: (parsed.correlation_warnings as string[]) ?? [],
     riskReductionSuggestions: (parsed.risk_reduction_suggestions as string[]) ?? [],
     responsibleConclusion: String(parsed.responsible_conclusion ?? ''),
+  };
+}
+
+export async function generateDailyPicks(fixtures: Fixture[]): Promise<DailyPicksResult> {
+  const fixturesSummary = fixtures.slice(0, 10).map(f => ({
+    id: f.id,
+    partido: `${f.homeTeam.name} vs ${f.awayTeam.name}`,
+    liga: f.league.name,
+    fecha: f.date,
+    local: {
+      nombre: f.homeTeam.name,
+      posicion: f.homeStanding ?? null,
+      forma: f.homeForm?.slice(0, 5).map(x => x.result).join('') ?? 'N/D',
+      goles_marcados_local: f.homeStats?.home?.goalsScored ?? null,
+      goles_recibidos_local: f.homeStats?.home?.goalsConceded ?? null,
+      over25_pct: f.homeStats?.home?.over25Percentage ?? null,
+      btts_pct: f.homeStats?.home?.bttsPercentage ?? null,
+      clean_sheet_pct: f.homeStats?.home?.cleanSheetPercentage ?? null,
+      avg_goles: f.homeStats?.home?.avgGoalsScored ?? null,
+    },
+    visitante: {
+      nombre: f.awayTeam.name,
+      posicion: f.awayStanding ?? null,
+      forma: f.awayForm?.slice(0, 5).map(x => x.result).join('') ?? 'N/D',
+      goles_marcados_visit: f.awayStats?.away?.goalsScored ?? null,
+      goles_recibidos_visit: f.awayStats?.away?.goalsConceded ?? null,
+      over25_pct: f.awayStats?.away?.over25Percentage ?? null,
+      btts_pct: f.awayStats?.away?.bttsPercentage ?? null,
+      clean_sheet_pct: f.awayStats?.away?.cleanSheetPercentage ?? null,
+      avg_goles: f.awayStats?.away?.avgGoalsScored ?? null,
+    },
+    h2h_reciente: f.headToHead?.slice(0, 3).map(h => `${h.homeTeam} ${h.homeGoals}-${h.awayGoals} ${h.awayTeam}`) ?? [],
+    cuotas_disponibles: f.odds?.slice(0, 6).map(o => ({ mercado: o.market, seleccion: o.selection, decimal: o.decimal, prob: o.impliedProbability })) ?? [],
+  }));
+
+  const userPrompt = `Eres un analista de datos de fútbol. Analiza TODOS estos partidos del día usando los datos estadísticos provistos y selecciona los mejores picks.
+
+IMPORTANTE: 
+- Basate SOLO en los datos provistos. No inventes nada.
+- Selecciona entre 5 y 8 picks en total entre todos los partidos.
+- Prioriza picks con alta probabilidad estadística (>55%) y buena justificación.
+- Mezcla mercados: victoria local/visitante, doble oportunidad, over/under goles, ambos anotan.
+- NO uses frases como "apuesta segura", "seguro", "garantizado".
+
+Devuelve SOLO este JSON:
+{
+  "picks": [
+    {
+      "fixture_id": "string",
+      "partido": "string",
+      "mercado": "string (ej: Más de 2.5 goles, Victoria local, Ambos anotan - Sí, Doble oportunidad 1X)",
+      "seleccion": "string (ej: Sí, Local, Más de 2.5)",
+      "razonamiento": "string (2 oraciones máximo explicando el pick con datos)",
+      "probabilidad": number (0-100, basado en estadísticas),
+      "confianza": "low|medium|high",
+      "riesgo": "low|medium|high",
+      "valor_score": number (0-100, qué tan valioso es el pick)
+    }
+  ],
+  "resumen_general": "string (1 oración sobre la jornada)"
+}
+
+Partidos a analizar:
+${JSON.stringify(fixturesSummary, null, 2)}`;
+
+  const content = await callGroq([
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error('La IA devolvió una respuesta inválida para los picks del día.');
+  }
+
+  const rawPicks = (parsed.picks as Record<string, unknown>[]) ?? [];
+
+  const picks: DailyPick[] = rawPicks.map((p, i) => {
+    const fixtureId = String(p.fixture_id ?? '');
+    const fixture = fixtures.find(f => f.id === fixtureId) ?? fixtures[0];
+    const probability = Number(p.probabilidad ?? 50);
+    const impliedOdds = probability > 0 ? parseFloat((100 / probability).toFixed(2)) : 2.0;
+
+    return {
+      id: `dp-${Date.now()}-${i}`,
+      fixtureId,
+      matchName: String(p.partido ?? ''),
+      homeTeam: fixture?.homeTeam?.name ?? '',
+      awayTeam: fixture?.awayTeam?.name ?? '',
+      league: fixture?.league?.name ?? '',
+      leagueLogo: fixture?.league?.logo ?? '',
+      matchDate: fixture?.date ?? '',
+      market: String(p.mercado ?? ''),
+      selection: String(p.seleccion ?? ''),
+      reasoning: String(p.razonamiento ?? ''),
+      probability,
+      impliedOdds,
+      confidence: (p.confianza as 'low' | 'medium' | 'high') ?? 'medium',
+      risk: (p.riesgo as 'low' | 'medium' | 'high') ?? 'medium',
+      valueScore: Number(p.valor_score ?? 50),
+    };
+  });
+
+  // Sort by valueScore desc
+  picks.sort((a, b) => b.valueScore - a.valueScore);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    date: new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }),
+    totalMatchesAnalyzed: fixtures.length,
+    picks,
+    disclaimer: 'Estos picks son análisis estadísticos. No son consejos de apuesta. La probabilidad no garantiza resultados. Juega responsablemente.',
   };
 }

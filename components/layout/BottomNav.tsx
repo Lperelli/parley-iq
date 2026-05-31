@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Calendar, Layers, Bookmark, Settings } from 'lucide-react';
+import { Home, Calendar, Layers, Target, Settings } from 'lucide-react';
 import { useParleyStore } from '@/store/parleyStore';
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: Home },
   { href: '/partidos', label: 'Partidos', icon: Calendar },
+  { href: '/picks', label: 'Picks', icon: Target },
   { href: '/parley', label: 'Parley', icon: Layers },
-  { href: '/guardados', label: 'Guardados', icon: Bookmark },
   { href: '/configuracion', label: 'Config', icon: Settings },
 ];
 
@@ -24,6 +24,7 @@ export default function BottomNav() {
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           const isParley = href === '/parley';
+          const isPicks = href === '/picks';
 
           return (
             <Link
@@ -40,7 +41,7 @@ export default function BottomNav() {
                     initial={{ opacity: 0, scaleX: 0 }}
                     animate={{ opacity: 1, scaleX: 1 }}
                     exit={{ opacity: 0, scaleX: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    transition={{ duration: 0.2 }}
                   />
                 )}
               </AnimatePresence>
@@ -51,7 +52,11 @@ export default function BottomNav() {
                 className="relative"
               >
                 <Icon
-                  className={`w-5 h-5 transition-colors duration-200 ${active ? 'text-cyan-400' : 'text-slate-500'}`}
+                  className={`w-5 h-5 transition-colors duration-200 ${
+                    active
+                      ? isPicks ? 'text-amber-400' : 'text-cyan-400'
+                      : 'text-slate-500'
+                  }`}
                   strokeWidth={active ? 2.5 : 1.8}
                 />
                 {isParley && picks.length > 0 && (
@@ -65,7 +70,11 @@ export default function BottomNav() {
                 )}
               </motion.div>
 
-              <span className={`text-[9px] font-medium leading-none transition-colors duration-200 ${active ? 'text-cyan-400' : 'text-slate-600'}`}>
+              <span className={`text-[9px] font-medium leading-none transition-colors duration-200 ${
+                active
+                  ? isPicks ? 'text-amber-400' : 'text-cyan-400'
+                  : 'text-slate-600'
+              }`}>
                 {label}
               </span>
             </Link>
